@@ -1,92 +1,65 @@
 #!/bin/bash
 
-VERSION="1.3"
-TARGET="/usr/local/bin/system-info"
+VERSION="1.4"
+COLOR=true
 
-# Farbcodes
+# Farbdefinitionen
 RESET="\e[0m"
 BOLD="\e[1m"
-CYAN="\e[36m"
+RED="\e[31m"
+GREEN="\e[32m"
 YELLOW="\e[33m"
+BLUE="\e[34m"
 MAGENTA="\e[35m"
+CYAN="\e[36m"
 
-# Hilfetext
-print_help() {
-    echo ""
-    echo "🖥️ system-info – Systemdiagnose-Tool (v$VERSION)"
-    echo ""
-    echo "Verwendung:"
+# Farblose Ausgabe bei --no-color
+for arg in "$@"; do
+    [[ "$arg" == "--no-color" ]] && COLOR=false
+done
+$COLOR || RESET="" && BOLD="" && RED="" && GREEN="" && YELLOW="" && BLUE="" && MAGENTA="" && CYAN=""
+
+# Hilfe anzeigen
+if [[ "$1" == "--help" ]]; then
+    echo -e "\n🖥️ ${BOLD}system-info${RESET} – Systemdiagnose-Tool"
+    echo -e "\nVerwendung:"
     echo "  system-info                – Zeigt Systeminformationen"
     echo "  system-info --version      – Zeigt die aktuelle Version"
     echo "  system-info --uninstall    – Entfernt das Tool"
     echo "  system-info --help         – Zeigt diese Hilfe an"
     echo "  system-info --no-color     – Deaktiviert Farbige Ausgabe"
     echo ""
-}
+    exit 0
+fi
 
-# Parameterbehandlung
-USE_COLOR=true
-for arg in "$@"; do
-    case "$arg" in
-        --help)
-            print_help
-            exit 0
-            ;;
-        --version)
-            echo "system-info v$VERSION"
-            exit 0
-            ;;
-        --uninstall)
-            echo "🗑️ Entferne $TARGET ..."
-            rm -f "$TARGET"
-            echo "✅ system-info wurde entfernt."
-            exit 0
-            ;;
-        --no-color)
-            RESET=""
-            BOLD=""
-            CYAN=""
-            YELLOW=""
-            MAGENTA=""
-            USE_COLOR=false
-            ;;
-    esac
-done
+# Versionsinfo
+if [[ "$1" == "--version" ]]; then
+    echo "system-info v${VERSION}"
+    exit 0
+fi
 
+# Uninstall
+if [[ "$1" == "--uninstall" ]]; then
+    echo "🗑️ Entferne /usr/local/bin/system-info ..."
+    rm -f /usr/local/bin/system-info
+    echo "✅ system-info wurde entfernt."
+    exit 0
+fi
+
+# Ausgabe der Systeminformationen
 echo ""
 echo -e "${BOLD}${CYAN}System Info:${RESET}"
 echo "------------"
 
-# OS & Kernel
 OS=$(grep PRETTY_NAME /etc/os-release | cut -d '=' -f2- | tr -d '"')
 KERNEL=$(uname -r)
-echo "OS:       $OS"
-echo "Kernel:   $KERNEL"
-
-# Hostname & Uptime
-echo "Hostname: $(hostname)"
-echo "Uptime:   $(uptime -p)"
-
-# Systemtyp
-if dmidecode -s system-product-name | grep -qiE "virtual|vmware|kvm|qemu"; then
-    echo "System Type: Virtual Machine"
-else
-    echo "System Type: Physical"
-fi
-
-# Netzwerkinterfaces
-echo -e "${BOLD}Network Interfaces:${RESET}"
-ip -o -4 addr show | awk '{print "  - " $2 ": " $4}'
-
-# CPU Info
+HOST=$(hostname)
+UPTIME=$(uptime -p)
+TYPE="Physical"
+dmidecode -s system-product-name | grep -qiE "virtual|vmware|kvm|qemu" && TYPE="Virtual Machine"
 CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d ':' -f2- | xargs)
 CORES=$(nproc --all)
 THREADS=$(lscpu | awk '/^CPU\(s\):/ {print $2}')
-echo "CPU:      $CPU"
-echo "Cores:    $CORES"
-echo "Threads:  $THREADS"
-
-# RAM gesamt
 TOTAL_RAM=$(dmidecode -t memory | awk '
 /Size: [0-9]+ [MG]B/ {
     if ($2 == "No") next
@@ -96,9 +69,20 @@ TOTAL_RAM=$(dmidecode -t memory | awk '
 END {
     printf "%.1f GB", sum / 1024
 }')
+
+echo "OS:        $OS"
+echo "Kernel:    $KERNEL"
+echo "Hostname:  $HOST"
+echo "Uptime:    $UPTIME"
+echo "System Type: $TYPE"
+echo -e "${BOLD}Network Interfaces:${RESET}"
+ip -o -4 addr show | awk '{print "  - " $2 ": " $4}'
+echo "CPU:       $CPU"
+echo "Cores:     $CORES"
+echo "Threads:   $THREADS"
 echo "Total RAM: $TOTAL_RAM"
 
-# RAM Module
+# RAM-Module
 echo -e "${BOLD}${YELLOW}RAM Module:${RESET}"
 dmidecode -t memory | awk '
 /Memory Device/,/^$/ {
@@ -115,7 +99,7 @@ dmidecode -t memory | awk '
     }
 }'
 
-# SMART Status
+# SMART-Status
 echo -e "${BOLD}${CYAN}SMART Status:${RESET}"
 lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
     DEVICE="/dev/$disk"
@@ -124,25 +108,31 @@ lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; 
     else
         OUT=$(smartctl -H "$DEVICE" 2>/dev/null)
     fi
-    STATUS=$(echo "$OUT" | grep -iE "SMART overall-health self-assessment|SMART Health Status" | awk -F: '{print $2}' | xargs)
+
+    STATUS=$(echo "$OUT" | grep -i "SMART overall-health self-assessment" | awk -F: '{print $2}' | xargs)
+    [[ -z "$STATUS" ]] && STATUS=$(echo "$OUT" | grep -i "SMART Health Status" | awk -F: '{print $2}' | xargs)
+
     if [[ -z "$STATUS" ]]; then
-        echo "  - $DEVICE: ❓ Kein Status"
-    echo "DEBUG: raw output from smartctl:"
-    echo "$OUT" | sed 's/^/    /'
-    elif echo "$STATUS" | grep -qi "fail"; then
-        echo "  - $DEVICE: ⚠️ $STATUS"
+        echo -e "  - $DEVICE: ${RED}❓ Kein Status${RESET}"
+        echo -e "    DEBUG: raw output from smartctl:"
+        echo "$OUT" | sed 's/^/      /'
+        continue
+    fi
+
+    if echo "$STATUS" | grep -qi "fail"; then
+        echo -e "  - $DEVICE: ${RED}⚠️ $STATUS${RESET}"
     else
         echo "  - $DEVICE: $STATUS"
     fi
 done
 
-# Disks
+# Festplatten
 echo -e "${BOLD}${YELLOW}Disk(s):${RESET}"
 lsblk -d -o NAME,MODEL,SIZE | grep -iE 'sd|nvme' | while read -r NAME MODEL SIZE; do
     printf "  - /dev/%s: %s - %s\n" "$NAME" "$MODEL" "$SIZE"
 done
 
-# RAID Status
+# RAID
 echo -e "${BOLD}${MAGENTA}RAID Status:${RESET}"
 MDADM_STATUS=$(cat /proc/mdstat | grep -E "^md[0-9]+")
 if [[ -n "$MDADM_STATUS" ]]; then
