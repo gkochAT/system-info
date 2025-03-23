@@ -47,7 +47,7 @@ echo "CPU:    $CPU"
 echo "RAM Module:"
 dmidecode -t memory | awk '
 /Memory Device/,/^$/ {
-    if ($0 ~ /Size:/) size=$2 " " $3
+    if ($0 ~ /Size:/ && $2 != "No") size=$2 " " $3
     if ($0 ~ /Type:/ && $1 == "Type:") type=$2
     if ($0 ~ /Part Number:/) {
         sub(/^\s+/, "", $0)
