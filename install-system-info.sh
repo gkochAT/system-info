@@ -87,7 +87,7 @@ if [[ "$1" == "--help" ]]; then
 fi
 
 if [[ "$1" == "--version" ]]; then
-    echo "system-info v1.0"
+    echo "system-info v1.1"
     exit 0
 fi
 
