@@ -78,6 +78,19 @@ if [[ "$1" == "--help" ]]; then
     echo "🖥️ system-info – Systemdiagnose-Tool"
     echo ""
     echo "Verwendung:"
+    echo "  system-info                – Zeigt Systeminformationen"
+    echo "  system-info --version      – Zeigt die aktuelle Version"
+    echo "  system-info --uninstall    – Entfernt das Tool"
+    echo "  system-info --help         – Zeigt diese Hilfe an"
+    echo "  system-info --no-color     – Deaktiviert Farbige Ausgabe"
+    echo ""
+    exit 0
+fi
+if [[ "$1" == "--help" ]]; then
+    echo ""
+    echo "🖥️ system-info – Systemdiagnose-Tool"
+    echo ""
+    echo "Verwendung:"
     echo "  system-info             – Zeigt Systeminformationen"
     echo "  system-info --version   – Zeigt die aktuelle Version"
     echo "  system-info --uninstall – Entfernt das Tool"
@@ -169,14 +182,11 @@ dmidecode -t memory | awk '
 
 # Liste aller physischen Datenträger (SSD/NVMe) mit Modell und Größe
 
-
-
 # SMART Status für erkannte Disks anzeigen
 echo -e "\e[1m\e[36mSMART Status:\e[0m"
 lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
     DEVICE="/dev/$disk"
     if [[ "$disk" == nvme* ]]; then
-        # NVMe verwenden eigenen Modus
         OUT=$(smartctl -H -d nvme "$DEVICE" 2>/dev/null)
     else
         OUT=$(smartctl -H "$DEVICE" 2>/dev/null)
@@ -198,6 +208,10 @@ lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; 
         echo "  - $DEVICE: $STATUS"
     fi
 done
+
+
+
+
 
 echo -e "\e[1m\e[36mSMART Status:\e[0m"
 lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
