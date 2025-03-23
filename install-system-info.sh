@@ -12,27 +12,43 @@ YELLOW="\e[33m"
 MAGENTA="\e[35m"
 RESET="\e[0m"
 
-if [[ "$1" == "--version" ]]; then
-    echo "system-info v1.5"
-    exit 0
-fi
-
-if [[ "$1" == "--uninstall" ]]; then
-    rm -f $TARGET
-    echo "✅ system-info wurde entfernt."
-    exit 0
-fi
-
-# Help
-if [[ "$1" == "--help" ]]; then
-    echo "Verwendung: system-info [OPTIONEN]"
-    echo ""
-    echo "Optionen:"
-    echo "  --version    Version anzeigen"
-    echo "  --uninstall  system-info entfernen"
-    echo "  --help       Diese Hilfe anzeigen"
-    exit 0
-fi
+# Optionen verarbeiten
+while [[ "$1" == --* ]]; do
+    case "$1" in
+        --nocolor)
+            BOLD=""
+            CYAN=""
+            YELLOW=""
+            MAGENTA=""
+            RESET=""
+            shift
+            ;;
+        --version)
+            echo "system-info v1.5"
+            exit 0
+            ;;
+        --uninstall)
+            rm -f $TARGET
+            echo "✅ system-info wurde entfernt."
+            exit 0
+            ;;
+        --help)
+            echo "Verwendung: system-info [OPTIONEN]"
+            echo ""
+            echo "Optionen:"
+            echo "  --version    Version anzeigen"
+            echo "  --uninstall  system-info entfernen"
+            echo "  --nocolor    Ausgabe ohne Farbcodierung"
+            echo "  --help       Diese Hilfe anzeigen"
+            exit 0
+            ;;
+        *)
+            echo "Unbekannte Option: $1"
+            echo "Verwenden Sie --help für weitere Informationen."
+            exit 1
+            ;;
+    esac
+done
 
 echo -e "${BOLD}${CYAN}System Info:${RESET}"
 echo "------------"
@@ -121,4 +137,3 @@ if command -v zpool &>/dev/null; then
 else
     echo "  - zfsutils-linux nicht installiert"
 fi
-
