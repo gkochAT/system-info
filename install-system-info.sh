@@ -1,7 +1,7 @@
 #!/bin/bash
 # system-info-install.sh
-# Dieses Skript überprüft die Abhängigkeiten und installiert anschließend
-# das eigentliche system-info Skript nach /usr/local/bin/system-info
+# Dieses Skript überprüft die Abhängigkeiten, installiert das system-info Skript
+# nach /usr/local/bin/system-info und fragt am Ende, ob es direkt ausgeführt werden soll.
 
 TARGET="/usr/local/bin/system-info"
 
@@ -219,3 +219,12 @@ EOF
 # Mache das system-info Skript ausführbar
 chmod +x "$TARGET"
 echo "Installation abgeschlossen. system-info ist nun unter $TARGET verfügbar."
+
+# Frage, ob system-info direkt ausgeführt werden soll
+read -p "Möchten Sie system-info jetzt ausführen? (y/n): " run_answer
+if [[ "$run_answer" =~ ^[Yy]$ ]]; then
+    echo "Starte system-info..."
+    "$TARGET"
+else
+    echo "Ausführung abgebrochen. Sie können system-info später über '$TARGET' starten."
+fi
