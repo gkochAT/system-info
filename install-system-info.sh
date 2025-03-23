@@ -89,7 +89,15 @@ echo "Cores:    $CORES"
 echo "Threads:  $THREADS"
 
 # RAM gesamt
-TOTAL_RAM=$(dmidecode -t memory | awk '/Size: [0-9]+ MB/ {sum += $2} END {printf "%.1f GB", sum/1024}')
+TOTAL_RAM=$(dmidecode -t memory | awk '
+/Size: [0-9]+ [MG]B/ {
+    if ($2 == "No") next
+    if ($3 == "MB") sum += $2
+    if ($3 == "GB") sum += $2 * 1024
+}
+END {
+    printf "%.1f GB", sum / 1024
+}')
 echo "Total RAM: $TOTAL_RAM"
 
 # RAM-Module
