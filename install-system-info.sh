@@ -28,7 +28,7 @@ while [[ "$1" == --* ]]; do
             exit 0
             ;;
         --uninstall)
-            rm -f $TARGET
+            rm -f "$TARGET"
             echo "✅ system-info wurde entfernt."
             exit 0
             ;;
@@ -49,6 +49,72 @@ while [[ "$1" == --* ]]; do
             ;;
     esac
 done
+
+# Funktion zur Überprüfung der Abhängigkeiten inkl. Installation fehlender Pakete
+check_dependencies() {
+    missing=()
+    # Alle Befehle als erforderlich (inklusive vormals optionaler Befehle)
+    required=("dmidecode" "ip" "awk" "nproc" "lscpu" "smartctl" "lsblk" "mdadm" "zpool")
+    
+    # Assoziatives Array zur Zuordnung von Befehlen zu Paketnamen (angepasst für Debian/Ubuntu)
+    declare -A cmd_to_pkg
+    cmd_to_pkg=(
+      [dmidecode]="dmidecode"
+      [ip]="iproute2"
+      [awk]="gawk"
+      [nproc]="coreutils"
+      [lscpu]="util-linux"
+      [smartctl]="smartmontools"
+      [lsblk]="util-linux"
+      [mdadm]="mdadm"
+      [zpool]="zfsutils-linux"
+    )
+    
+    echo -e "${BOLD}${CYAN}Überprüfe Abhängigkeiten...${RESET}"
+    for cmd in "${required[@]}"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            missing+=("$cmd")
+            echo "Fehlende Abhängigkeit: $cmd (erforderlich)"
+        fi
+    done
+    
+    if [ ${#missing[@]} -ne 0 ]; then
+        echo ""
+        echo "Die folgenden erforderlichen Module fehlen: ${missing[*]}"
+        read -p "Möchten Sie diese Module automatisch installieren? (y/n): " answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            # Erstelle eine Liste der Paketnamen (ohne Duplikate)
+            packages=()
+            for cmd in "${missing[@]}"; do
+                pkg=${cmd_to_pkg[$cmd]}
+                if [[ ! " ${packages[*]} " =~ " ${pkg} " ]]; then
+                    packages+=("$pkg")
+                fi
+            done
+            echo "Die folgenden Pakete werden installiert: ${packages[*]}"
+            # Paketmanager ermitteln und Installation durchführen
+            if command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y "${packages[@]}"
+            elif command -v yum >/dev/null 2>&1; then
+                sudo yum install -y "${packages[@]}"
+            elif command -v pacman >/dev/null 2>&1; then
+                sudo pacman -S --noconfirm "${packages[@]}"
+            else
+                echo "Kein unterstützter Paketmanager gefunden. Bitte installieren Sie die fehlenden Pakete manuell."
+                exit 1
+            fi
+            echo "Installation abgeschlossen. Überprüfe erneut die Abhängigkeiten..."
+            # Rekursiver Aufruf, um sicherzustellen, dass alle Module nun vorhanden sind
+            check_dependencies
+        else
+            echo "Bitte installieren Sie die fehlenden Module: ${missing[*]}"
+            exit 1
+        fi
+    fi
+}
+
+# Abhängigkeiten prüfen
+check_dependencies
 
 echo -e "${BOLD}${CYAN}System Info:${RESET}"
 echo "------------"
