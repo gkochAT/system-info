@@ -127,6 +127,8 @@ lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; 
     STATUS=$(echo "$OUT" | grep -iE "SMART overall-health self-assessment|SMART Health Status" | awk -F: '{print $2}' | xargs)
     if [[ -z "$STATUS" ]]; then
         echo "  - $DEVICE: ❓ Kein Status"
+    echo "DEBUG: raw output from smartctl:"
+    echo "$OUT" | sed 's/^/    /'
     elif echo "$STATUS" | grep -qi "fail"; then
         echo "  - $DEVICE: ⚠️ $STATUS"
     else
