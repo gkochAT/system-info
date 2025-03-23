@@ -43,11 +43,20 @@ echo "------------"
 CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d ':' -f2- | xargs)
 echo "CPU:    $CPU"
 
-# RAM-Infos
-RAM_SIZE=$(dmidecode -t memory | grep -m1 "Size:" | awk '{print $2, $3}')
-RAM_TYPE=$(dmidecode -t memory | grep -m1 "Type:" | awk '{print $2}')
-RAM_PART=$(dmidecode -t memory | grep -m1 "Part Number:" | xargs | cut -d ' ' -f3)
-echo "RAM:    $RAM_SIZE $RAM_TYPE - $RAM_PART"
+# Alle RAM-Module
+echo "RAM Module:"
+dmidecode -t memory | awk '
+/Memory Device/,/^$/' | awk '
+/Size:|Type:|Part Number:/ {
+  gsub(/^ +| +$/, "", $0)
+  if ($0 ~ /Size:/) size=$2 " " $3
+  if ($0 ~ /Type:/) type=$2
+  if ($0 ~ /Part Number:/) part=$3
+  if (size && type && part) {
+    printf "  - %s %s - %s\n", size, type, part
+    size=""; type=""; part=""
+  }
+}'
 
 # Alle SSD/NVMe Laufwerke auflisten
 echo "Disk(s):"
