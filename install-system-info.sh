@@ -249,27 +249,6 @@ done
 # mdadm RAID prüfen
 if grep -q "^md" /proc/mdstat; then
     grep "^md" /proc/mdstat | while read -r line; do
-        echo "  - Software-RAID (mdadm): $line"
-        if echo "$line" | grep -q '\[.*_.*\]'; then
-            echo "    ⚠️ RAID-Status: Möglicherweise degraded oder Resync läuft"
-        fi
-    done
-else
-    echo "  - Kein Software-RAID (mdadm) erkannt"
-fi
-
-# ZFS RAID prüfen
-if command -v zpool >/dev/null 2>&1; then
-    ZPOOLS=$(zpool list -H -o name)
-    if [[ -n "$ZPOOLS" ]]; then
-        STATUS=$(zpool status -x)
-        if [[ "$STATUS" != "all pools are healthy" ]]; then
-            echo "  ⚠️ ZFS Fehlerstatus:"
-            echo "$STATUS" | sed 's/^/    /'
-        else
-            echo "  ✅ Alle ZFS-Pools sind gesund"
-        fi
-    else
         echo "  - Kein ZFS-Pool gefunden"
     fi
 else
@@ -281,21 +260,6 @@ echo -e "\e[1m\e[35mRAID Status:\e[0m"
 # mdadm RAID
 if grep -q "^md" /proc/mdstat; then
     grep "^md" /proc/mdstat | while read -r line; do
-        echo "  - Software-RAID (mdadm): $line"
-    done
-else
-    echo "  - Kein Software-RAID (mdadm) erkannt"
-fi
-
-# ZFS RAID
-if command -v zpool >/dev/null 2>&1; then
-    ZPOOLS=$(zpool list -H -o name)
-    if [[ -n "$ZPOOLS" ]]; then
-        for pool in $ZPOOLS; do
-            echo "  - ZFS-Pool '$pool':"
-            zpool status "$pool" | awk '/mirror|raidz|stripe|NAME/{print "    " $0}'
-        done
-    else
         echo "  - Kein ZFS-Pool gefunden"
     fi
 else
