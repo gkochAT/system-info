@@ -15,6 +15,29 @@ echo "📦 Installing or updating system-info to $TARGET ..."
 echo ""
 
 # Prüfen, ob dmidecode installiert ist – benötigt für RAM/CPU/Hardwareinfos
+DEP_PKGS=""
+if ! command -v dmidecode >/dev/null 2>&1; then
+    DEP_PKGS="$DEP_PKGS dmidecode"
+fi
+# Prüfen, ob mdadm für RAID-Erkennung installiert ist
+if ! command -v mdadm >/dev/null 2>&1; then
+    DEP_PKGS="$DEP_PKGS mdadm"
+fi
+# Prüfen, ob zpool (ZFS) verfügbar ist
+if ! command -v zpool >/dev/null 2>&1; then
+    DEP_PKGS="$DEP_PKGS zfsutils-linux"
+fi
+# Prüfen, ob smartctl (für SMART Status) verfügbar ist
+if ! command -v smartctl >/dev/null 2>&1; then
+    DEP_PKGS="$DEP_PKGS smartmontools"
+fi
+if [[ -n "$DEP_PKGS" ]]; then
+    echo "🔧 Installiere fehlende Abhängigkeiten: $DEP_PKGS"
+    apt update && apt install -y $DEP_PKGS
+else
+    echo "✅ Alle benötigten Pakete sind installiert."
+fi
+
 if ! command -v dmidecode >/dev/null 2>&1; then
     echo "🔍 'dmidecode' ist nicht installiert. Versuche Installation ..."
     apt update && apt install -y dmidecode
@@ -129,6 +152,37 @@ lsblk -d -o NAME,MODEL,SIZE | grep -iE 'sd|nvme' | while read -r NAME MODEL SIZE
 done
 
 # RAID-Status prüfen: mdadm und ZFS
+
+# mdadm RAID prüfen
+if grep -q "^md" /proc/mdstat; then
+    grep "^md" /proc/mdstat | while read -r line; do
+        echo "  - Software-RAID (mdadm): $line"
+        if echo "$line" | grep -q '\[.*_.*\]'; then
+            echo "    ⚠️ RAID-Status: Möglicherweise degraded oder Resync läuft"
+        fi
+    done
+else
+    echo "  - Kein Software-RAID (mdadm) erkannt"
+fi
+
+# ZFS RAID prüfen
+if command -v zpool >/dev/null 2>&1; then
+    ZPOOLS=$(zpool list -H -o name)
+    if [[ -n "$ZPOOLS" ]]; then
+        STATUS=$(zpool status -x)
+        if [[ "$STATUS" != "all pools are healthy" ]]; then
+            echo "  ⚠️ ZFS Fehlerstatus:"
+            echo "$STATUS" | sed 's/^/    /'
+        else
+            echo "  ✅ Alle ZFS-Pools sind gesund"
+        fi
+    else
+        echo "  - Kein ZFS-Pool gefunden"
+    fi
+else
+    echo "  - ZFS ist nicht installiert"
+fi
+
 echo "RAID Status:"
 
 # mdadm RAID
