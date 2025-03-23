@@ -4,6 +4,15 @@ TARGET="/usr/local/bin/system-info"
 
 # Uninstall-Funktion
 if [[ "$1" == "--uninstall" ]]; then
+    echo "🗑️ Entferne /usr/local/bin/system-info falls vorhanden ..."
+    rm -f /usr/local/bin/system-info
+    echo "✅ system-info wurde entfernt."
+    echo "🧹 Entferne dieses Installationsskript: $0"
+    rm -- "$0"
+    exit 0
+fi
+
+if [[ "$1" == "--uninstall" ]]; then
     if [ -f "$TARGET" ]; then
         echo "🗑️ Entferne $TARGET ..."
         rm -f "$TARGET"
