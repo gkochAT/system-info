@@ -166,5 +166,6 @@ echo "---------------------------"
 "$TARGET"
 
 # Selbstlöschung nach erfolgreicher Installation
-echo "🧹 Entferne das Installationsskript: $0"
-rm -- "$0"
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+echo "🧹 Entferne das Installationsskript: $SCRIPT_PATH"
+rm -- "$SCRIPT_PATH"
