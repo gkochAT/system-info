@@ -166,6 +166,4 @@ echo "---------------------------"
 "$TARGET"
 
 # Selbstlöschung nach erfolgreicher Installation
-SCRIPT_PATH="$(readlink -f "$0")"
-echo "🧹 Entferne das Installationsskript: $SCRIPT_PATH"
-rm -- "$SCRIPT_PATH"
+# Selbstlöschung entfernt – nicht notwendig bei Ausführung aus /tmp
