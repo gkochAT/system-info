@@ -69,6 +69,13 @@ cat > "$TARGET" << 'EOF'
 #!/bin/bash
 
 # Prüfen auf '--uninstall' – entfernt das Tool bei Bedarf
+
+# --version anzeigen
+if [[ "$1" == "--version" ]]; then
+    echo "system-info v1.0"
+    exit 0
+fi
+
 if [[ "$1" == "--uninstall" ]]; then
     echo "🗑️ Entferne /usr/local/bin/system-info ..."
     rm -f /usr/local/bin/system-info
