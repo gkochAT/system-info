@@ -18,7 +18,6 @@ echo "📦 Installing or updating system-info to $TARGET ..."
 echo ""
 
 # Prüfen, ob dmidecode installiert ist
-# Und ob zpool vorhanden ist (ZFS Tools)
 if ! command -v dmidecode >/dev/null 2>&1; then
     echo "🔍 'dmidecode' ist nicht installiert. Versuche Installation ..."
     apt update && apt install -y dmidecode
@@ -51,6 +50,13 @@ cat > "$TARGET" << 'EOF'
 
 echo ""
 echo "System Info:"
+echo "------------"
+
+# OS & Kernel
+OS=$(grep PRETTY_NAME /etc/os-release | cut -d '=' -f2- | tr -d '"')
+KERNEL=$(uname -r)
+echo "OS:      $OS"
+echo "Kernel:  $KERNEL"
 
 # Hostname
 HOST=$(hostname)
@@ -58,20 +64,35 @@ echo "Hostname: $HOST"
 
 # Uptime
 UPTIME=$(uptime -p)
-echo "Uptime:  $UPTIME"
+echo "Uptime:   $UPTIME"
+
+# Virtuell oder physisch
+if dmidecode -s system-product-name | grep -qiE "virtual|vmware|kvm|qemu"; then
+    echo "System Type: Virtual Machine"
+else
+    echo "System Type: Physical"
+fi
 
 # Netzwerkinterfaces
-IP_OUTPUT=$(ip -o -4 addr show | awk '{print $2 ": " $4}')
+IP_OUTPUT=$(ip -o -4 addr show | awk '{print "  - " $2 ": " $4}')
 echo "Network Interfaces:"
 echo "$IP_OUTPUT"
 
-echo "------------"
-
 # CPU-Modell
 CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d ':' -f2- | xargs)
-echo "CPU:    $CPU"
+echo "CPU:      $CPU"
 
-# Alle RAM-Module anzeigen
+# CPU Cores/Threads
+CORES=$(nproc --all)
+THREADS=$(lscpu | awk '/^CPU\(s\):/ {print $2}')
+echo "Cores:    $CORES"
+echo "Threads:  $THREADS"
+
+# RAM gesamt
+TOTAL_RAM=$(free -g | awk '/^Mem:/ {print $2 " GB"}')
+echo "Total RAM: $TOTAL_RAM"
+
+# RAM-Module
 echo "RAM Module:"
 dmidecode -t memory | awk '
 /Memory Device/,/^$/ {
