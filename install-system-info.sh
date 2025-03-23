@@ -49,11 +49,11 @@ RAM_TYPE=$(dmidecode -t memory | grep -m1 "Type:" | awk '{print $2}')
 RAM_PART=$(dmidecode -t memory | grep -m1 "Part Number:" | xargs | cut -d ' ' -f3)
 echo "RAM:    $RAM_SIZE $RAM_TYPE - $RAM_PART"
 
-# SSD/NVMe Infos
-DISK_INFO=$(lsblk -d -o MODEL,SIZE | grep -iE 'AirDisk|Kingston|Samsung|Crucial|INTEL|nvme|ssd' | head -n1)
-DISK_MODEL=$(echo "$DISK_INFO" | awk '{$NF=""; print $0}' | xargs)
-DISK_SIZE=$(echo "$DISK_INFO" | awk '{print $NF}')
-echo "Disk:   $DISK_MODEL - $DISK_SIZE"
+# Alle SSD/NVMe Laufwerke auflisten
+echo "Disk(s):"
+lsblk -d -o NAME,MODEL,SIZE | grep -iE 'sd|nvme' | while read -r NAME MODEL SIZE; do
+    printf "  - /dev/%s: %s - %s\n" "$NAME" "$MODEL" "$SIZE"
+done
 
 echo ""
 EOF
