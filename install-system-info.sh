@@ -71,6 +71,21 @@ cat > "$TARGET" << 'EOF'
 # Prüfen auf '--uninstall' – entfernt das Tool bei Bedarf
 
 # --version anzeigen
+
+# --help anzeigen
+if [[ "$1" == "--help" ]]; then
+    echo ""
+    echo "🖥️ system-info – Systemdiagnose-Tool"
+    echo ""
+    echo "Verwendung:"
+    echo "  system-info             – Zeigt Systeminformationen"
+    echo "  system-info --version   – Zeigt die aktuelle Version"
+    echo "  system-info --uninstall – Entfernt das Tool"
+    echo "  system-info --help      – Zeigt diese Hilfe an"
+    echo ""
+    exit 0
+fi
+
 if [[ "$1" == "--version" ]]; then
     echo "system-info v1.0"
     exit 0
