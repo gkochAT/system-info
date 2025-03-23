@@ -4,20 +4,24 @@ Alle relevanten Änderungen und Releases des Projekts.
 
 ---
 
-## [v1.0] – Initial Release – 2025-03-23
+# 📅 Changelog – system-info
 
-### ✨ Neu
-- Installation per `wget` nach `/tmp` mit automatischer Prüfung und Installation von Abhängigkeiten
-- Systeminformationen:
-  - OS, Kernel, Hostname, Uptime
-  - CPU-Modell, Kerne, Threads
-  - RAM gesamt & pro Modul
-  - Disks: NVMe/SATA inkl. Modell + Größe
-- RAID-Status:
-  - mdadm Software-RAID (inkl. Warnung bei degraded)
-  - ZFS Pools mit `zpool status -x`
-- SMART-Status:
-  - Erkennung für NVMe & SATA
-  - Debug-Ausgabe bei fehlendem Health-Wert
-- Deinstallation via:
-  - `system-info --uninstall`
+## [v1.5] - 2024-03-23
+
+### ✨ Neu hinzugefügt
+- Unterstützung für Proxmox-spezifische Systeminformationen
+- Erweiterte RAID- und ZFS-Pool Status-Anzeige
+- Übersichtliche Festplatteninformationen mit SMART-Status
+- Hardware-Informationen (CPU, RAM, Netzwerk)
+- Installationsskript zur automatischen Abhängigkeitsprüfung und Installation fehlender Pakete (optimiert für Debian-basierte Systeme)
+
+### 🛠️ Verbesserungen
+- Versionsnummer jetzt zentral über Variable verwaltet
+- Direkte Installation mit `wget`-Einzeiler möglich
+- README umfassend überarbeitet und aktualisiert
+
+### 🔧 Bugfixes
+- Korrekte Handhabung der Option `--nocolor`
+- Fehlerbehebung bei der SMART-Status-Erkennung
+
+## [v1.0] – Initial Release – 2025-03-23
