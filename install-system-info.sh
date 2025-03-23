@@ -2,24 +2,11 @@
 
 TARGET="/usr/local/bin/system-info"
 
-# Uninstall-Funktion
+# Uninstall-Funktion im Installationsskript
 if [[ "$1" == "--uninstall" ]]; then
     echo "🗑️ Entferne /usr/local/bin/system-info falls vorhanden ..."
     rm -f /usr/local/bin/system-info
     echo "✅ system-info wurde entfernt."
-    echo "🧹 Entferne dieses Installationsskript: $0"
-    rm -- "$0"
-    exit 0
-fi
-
-if [[ "$1" == "--uninstall" ]]; then
-    if [ -f "$TARGET" ]; then
-        echo "🗑️ Entferne $TARGET ..."
-        rm -f "$TARGET"
-        echo "✅ 'system-info' wurde entfernt."
-    else
-        echo "ℹ️ 'system-info' ist nicht installiert."
-    fi
     exit 0
 fi
 
@@ -57,15 +44,13 @@ fi
 cat > "$TARGET" << 'EOF'
 #!/bin/bash
 
-# Direkt im Tool: system-info --uninstall
+# Uninstall direkt im Tool
 if [[ "$1" == "--uninstall" ]]; then
     echo "🗑️ Entferne /usr/local/bin/system-info ..."
     rm -f /usr/local/bin/system-info
     echo "✅ system-info wurde entfernt."
     exit 0
 fi
-
-#!/bin/bash
 
 echo ""
 echo "System Info:"
@@ -180,9 +165,6 @@ echo "🔍 Testlauf:"
 echo "---------------------------"
 "$TARGET"
 
-# Selbstlöschung des Installationsskripts
-SCRIPT_PATH="$0"
-if [ -f "$SCRIPT_PATH" ]; then
-    echo "🧹 Entferne das Installationsskript: $SCRIPT_PATH"
-    rm -- "$SCRIPT_PATH"
-fi
+# Selbstlöschung nach erfolgreicher Installation
+echo "🧹 Entferne das Installationsskript: $0"
+rm -- "$0"
