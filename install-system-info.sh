@@ -18,6 +18,7 @@ echo "📦 Installing or updating system-info to $TARGET ..."
 echo ""
 
 # Prüfen, ob dmidecode installiert ist
+# Und ob zpool vorhanden ist (ZFS Tools)
 if ! command -v dmidecode >/dev/null 2>&1; then
     echo "🔍 'dmidecode' ist nicht installiert. Versuche Installation ..."
     apt update && apt install -y dmidecode
@@ -31,12 +32,39 @@ else
     echo "✅ 'dmidecode' ist bereits installiert."
 fi
 
+# Prüfen, ob zpool verfügbar ist (ZFS)
+if ! command -v zpool >/dev/null 2>&1; then
+    echo "🔍 'zfsutils-linux' (ZFS) ist nicht installiert. Versuche Installation ..."
+    apt update && apt install -y zfsutils-linux
+    if [ $? -ne 0 ]; then
+        echo "⚠️ Hinweis: Konnte 'zfsutils-linux' nicht installieren. ZFS-Ausgabe wird ggf. übersprungen."
+    else
+        echo "✅ 'zfsutils-linux' erfolgreich installiert."
+    fi
+else
+    echo "✅ ZFS-Tools (zfsutils-linux) sind bereits installiert."
+fi
+
 # Skript schreiben
 cat > "$TARGET" << 'EOF'
 #!/bin/bash
 
 echo ""
 echo "System Info:"
+
+# Hostname
+HOST=$(hostname)
+echo "Hostname: $HOST"
+
+# Uptime
+UPTIME=$(uptime -p)
+echo "Uptime:  $UPTIME"
+
+# Netzwerkinterfaces
+IP_OUTPUT=$(ip -o -4 addr show | awk '{print $2 ": " $4}')
+echo "Network Interfaces:"
+echo "$IP_OUTPUT"
+
 echo "------------"
 
 # CPU-Modell
@@ -65,6 +93,33 @@ echo "Disk(s):"
 lsblk -d -o NAME,MODEL,SIZE | grep -iE 'sd|nvme' | while read -r NAME MODEL SIZE; do
     printf "  - /dev/%s: %s - %s\n" "$NAME" "$MODEL" "$SIZE"
 done
+
+# RAID-Erkennung
+echo "RAID Status:"
+
+# mdadm RAID
+if grep -q "^md" /proc/mdstat; then
+    grep "^md" /proc/mdstat | while read -r line; do
+        echo "  - Software-RAID (mdadm): $line"
+    done
+else
+    echo "  - Kein Software-RAID (mdadm) erkannt"
+fi
+
+# ZFS RAID
+if command -v zpool >/dev/null 2>&1; then
+    ZPOOLS=$(zpool list -H -o name)
+    if [[ -n "$ZPOOLS" ]]; then
+        for pool in $ZPOOLS; do
+            echo "  - ZFS-Pool '$pool':"
+            zpool status "$pool" | awk '/mirror|raidz|stripe|NAME/{print "    " $0}'
+        done
+    else
+        echo "  - Kein ZFS-Pool gefunden"
+    fi
+else
+    echo "  - ZFS ist nicht installiert"
+fi
 
 echo ""
 EOF
