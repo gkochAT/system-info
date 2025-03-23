@@ -99,7 +99,7 @@ if [[ "$1" == "--uninstall" ]]; then
 fi
 
 echo ""
-echo "System Info:"
+echo -e "\e[1m\e[34mSystem Info:\e[0m"
 echo "------------"
 
 # OS & Kernel-Version anzeigen
@@ -125,7 +125,7 @@ fi
 
 # IPv4-Adressen aller Netzwerkinterfaces ausgeben
 IP_OUTPUT=$(ip -o -4 addr show | awk '{print "  - " $2 ": " $4}')
-echo "Network Interfaces:"
+echo -e "\e[1mNetwork Interfaces:\e[0m"
 echo "$IP_OUTPUT"
 
 # CPU-Name (Modell)
@@ -151,7 +151,7 @@ END {
 echo "Total RAM: $TOTAL_RAM"
 
 # Details aller RAM-Bausteine (Größe, Typ, Part-Nummer)
-echo "RAM Module:"
+echo -e "\e[1m\e[33mRAM Module:\e[0m"
 dmidecode -t memory | awk '
 /Memory Device/,/^$/ {
     if ($0 ~ /Size:/ && $2 != "No") size=$2 " " $3
@@ -170,8 +170,9 @@ dmidecode -t memory | awk '
 # Liste aller physischen Datenträger (SSD/NVMe) mit Modell und Größe
 
 
+
 # SMART Status für erkannte Disks anzeigen
-echo "SMART Status:"
+echo -e "\e[1m\e[36mSMART Status:\e[0m"
 lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
     DEVICE="/dev/$disk"
     if [[ "$disk" == nvme* ]]; then
@@ -198,7 +199,34 @@ lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; 
     fi
 done
 
-echo "SMART Status:"
+echo -e "\e[1m\e[36mSMART Status:\e[0m"
+lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
+    DEVICE="/dev/$disk"
+    if [[ "$disk" == nvme* ]]; then
+        # NVMe verwenden eigenen Modus
+        OUT=$(smartctl -H -d nvme "$DEVICE" 2>/dev/null)
+    else
+        OUT=$(smartctl -H "$DEVICE" 2>/dev/null)
+    fi
+
+    STATUS=$(echo "$OUT" | grep -i "SMART overall-health self-assessment" | awk -F: '{print $2}' | xargs)
+    if [[ -z "$STATUS" ]]; then
+        STATUS=$(echo "$OUT" | grep -i "SMART Health Status" | awk -F: '{print $2}' | xargs)
+    fi
+    if [[ -z "$STATUS" ]]; then
+        echo "  - $DEVICE: ❓ Kein Status erkannt (Debug-Ausgabe folgt):"
+        echo "$OUT" | sed 's/^/      /'
+        continue
+    fi
+
+    if echo "$STATUS" | grep -qi "fail"; then
+        echo "  - $DEVICE: ⚠️ $STATUS"
+    else
+        echo "  - $DEVICE: $STATUS"
+    fi
+done
+
+echo -e "\e[1m\e[36mSMART Status:\e[0m"
 lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
     DEVICE="/dev/$disk"
     if [[ "$disk" == nvme* ]]; then
@@ -223,7 +251,7 @@ lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; 
     fi
 done
 
-echo "Disk(s):"
+echo -e "\e[1m\e[33mDisk(s):\e[0m"
 lsblk -d -o NAME,MODEL,SIZE | grep -iE 'sd|nvme' | while read -r NAME MODEL SIZE; do
     printf "  - /dev/%s: %s - %s\n" "$NAME" "$MODEL" "$SIZE"
 done
@@ -260,7 +288,7 @@ else
     echo "  - ZFS ist nicht installiert"
 fi
 
-echo "RAID Status:"
+echo -e "\e[1m\e[35mRAID Status:\e[0m"
 
 # mdadm RAID
 if grep -q "^md" /proc/mdstat; then
