@@ -19,6 +19,16 @@ Ein praktisches Shell-Tool zur Anzeige grundlegender Hardwareinformationen – i
 
 ---
 
+## 🔧 Verfügbare Parameter
+
+| Befehl                    | Beschreibung                                |
+|---------------------------|---------------------------------------------|
+| `system-info`             | Zeigt alle Systeminformationen              |
+| `system-info --help`      | Zeigt diese Hilfeübersicht                  |
+| `system-info --version`   | Zeigt die aktuelle Version des Tools        |
+| `system-info --uninstall` | Entfernt das Tool vom System                |
+
+
 ## ⚙️ Installation
 
 Du kannst das Skript einfach per `wget` herunterladen und ausführen:
@@ -43,6 +53,22 @@ system-info
 ```
 
 ---
+
+## 🆘 Hilfe anzeigen
+
+Du kannst dir jederzeit eine Übersicht der verfügbaren Optionen anzeigen lassen:
+
+```bash
+system-info --help
+```
+
+## 🧩 Version anzeigen
+
+Du kannst jederzeit die aktuelle Version prüfen:
+
+```bash
+system-info --version
+```
 
 ## 🧹 Deinstallation
 
@@ -109,6 +135,17 @@ RAID Status:
 ```
 
 ---
+
+## 🛠️ Automatische Abhängigkeiten
+
+Beim ersten Ausführen prüft das Tool, ob folgende Pakete installiert sind:
+
+- `dmidecode` (für RAM/CPU-Erkennung)
+- `mdadm` (für Software-RAID)
+- `zfsutils-linux` (für ZFS-Pools)
+- `smartmontools` (für SMART-Gesundheitsstatus)
+
+Fehlende Pakete werden automatisch über `apt` installiert (Root-Rechte erforderlich).
 
 ## 📁 Struktur nach der Installation
 
