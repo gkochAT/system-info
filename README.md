@@ -1,7 +1,6 @@
 # 🖥️ system-info
 
-[![Shell Script](https://img.shields.io/badge/script-shell-brightgreen.svg)](https://bash.sh)  
-Ein praktisches Shell-Tool zur Anzeige grundlegender Hardwareinformationen – speziell für Linux- und Proxmox-Umgebungen entwickelt.
+Ein praktisches Shell-Tool zur Anzeige grundlegender Hardwareinformationen – ideal für Linux- und Proxmox-Umgebungen.
 
 ---
 
@@ -9,34 +8,27 @@ Ein praktisches Shell-Tool zur Anzeige grundlegender Hardwareinformationen – s
 
 ✅ Zeigt dir auf einen Blick:
 
-- 🧠 CPU-Modellname
-- 🧬 RAM-Informationen: Größe, Typ, Hersteller (Hex oder Name), Part-Nummer
-- 💾 SSD/NVMe-Modellname & Kapazität
-
-⚙️ Weitere Funktionen:
-
-- Erkennt automatisch, ob `dmidecode` installiert ist
-- Installiert `dmidecode` bei Bedarf automatisch über `apt`
-- Legt sich als global ausführbares Kommando `system-info` unter `/usr/local/bin` ab
-- Unterstützt Deinstallation mit `--uninstall`-Flag
+- 🧠 CPU-Modell, Cores und Threads
+- 🧬 Gesamter RAM & alle Module mit Typ und Part-Nummer
+- 💾 SSD/NVMe-Modelle mit Größe
+- 🧱 RAID-Erkennung (Software-RAID via mdadm + ZFS)
+- 🖥️ Systeminfos: Hostname, Uptime, OS-Version, Kernel, virtuell oder physisch
+- 🌐 Netzwerkinterfaces inkl. IP-Adressen
 
 ---
 
 ## ⚙️ Installation
 
-Du kannst das Skript ganz einfach über `curl` oder `wget` installieren:
+Du kannst das Skript einfach per `wget` herunterladen und ausführen:
 
-### 🔸 Mit `curl`:
+### 📦 Mit `wget` nach /tmp:
 ```bash
-curl -sSL https://raw.githubusercontent.com/gkochAT/system-info/main/install-system-info.sh | bash
+wget -qO /tmp/install-system-info.sh https://raw.githubusercontent.com/gkochAT/system-info/main/install-system-info.sh && bash /tmp/install-system-info.sh
 ```
 
-### 🔸 Mit `wget`:
-```bash
-wget -qO- https://raw.githubusercontent.com/gkochAT/system-info/main/install-system-info.sh | bash
-```
+🔹 Das Skript wird **nicht dauerhaft gespeichert** – es wird in `/tmp` abgelegt und beim nächsten Reboot automatisch gelöscht.
 
-🔹 Das Skript wird nach der Installation unter folgendem Pfad abgelegt:
+🔹 Das Tool wird nach der Installation unter folgendem Pfad abgelegt:
 
 ```bash
 /usr/local/bin/system-info
@@ -52,65 +44,67 @@ system-info
 
 ## 🧹 Deinstallation
 
-Falls du das Tool wieder entfernen möchtest, kannst du es mit folgendem Befehl deinstallieren:
+### 🔸 Direkt über das Tool:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/gkochAT/system-info/main/install-system-info.sh | bash -s -- --uninstall
+system-info --uninstall
 ```
+
+Löscht das Tool (`/usr/local/bin/system-info`) wieder sauber vom System.
 
 ---
 
 ## 🧪 Beispielausgabe
 
-Beispiel einer typischen Ausgabe:
-
 ```bash
 System Info:
 ------------
 
-CPU:    Intel(R) N150
-RAM:    16 GB DDR4 - AD4AS3200QG
-Disk:   AirDisk 512GB SSD - 476.9G
+OS:       Debian GNU/Linux 12 (bookworm)
+Kernel:   6.8.12-8-pve
+Hostname: pve
+Uptime:   up 5 days, 17 hours, 41 minutes
+System Type: Physical
+Network Interfaces:
+  - lo: 127.0.0.1/8
+  - enp0s31f6: 5.9.10.155
+  - vmbr0: 5.9.10.155/32
+CPU:      Intel(R) Xeon(R) CPU E3-1275 v5 @ 3.60GHz
+Cores:    8
+Threads:  8
+Total RAM: 64.0 GB
+RAM Module:
+  - 16 GB DDR4 - M391A2K43BB1-CPB
+  - 16 GB DDR4 - M391A2K43BB1-CPB
+  - 16 GB DDR4 - M391A2K43BB1-CPB
+  - 16 GB DDR4 - M391A2K43BB1-CPB
+Disk(s):
+  - /dev/nvme0n1: SAMSUNG - MZVPV512HDGL-00000 - 476.9G
+  - /dev/nvme1n1: SAMSUNG - MZVPV512HDGL-00000 - 476.9G
+RAID Status:
+  - Software-RAID (mdadm): md1 : active raid1 nvme0n1p2[1] nvme1n1p2[0]
+  - Software-RAID (mdadm): md0 : active raid1 nvme0n1p1[1] nvme1n1p1[0]
+  - Kein ZFS-Pool gefunden
 ```
 
 ---
 
 ## 📁 Struktur nach der Installation
 
-| Komponente            | Pfad                          |
-|-----------------------|-------------------------------|
-| Ausführbares Tool     | `/usr/local/bin/system-info`  |
-| Installationsskript   | temporär, manuell heruntergeladen |
-| `dmidecode` (falls fehlend) | wird über `apt install` nachinstalliert |
+| Komponente             | Pfad                          |
+|------------------------|-------------------------------|
+| Ausführbares Tool      | `/usr/local/bin/system-info`  |
+| Installationsskript    | temporär: `/tmp/install-system-info.sh` |
+| dmidecode              | wird bei Bedarf installiert   |
+| zfsutils-linux         | wird bei Bedarf installiert   |
 
 ---
 
 ## 🔍 Was passiert bei der Installation?
 
-- Das Skript prüft, ob `dmidecode` installiert ist
-- Falls nicht, wird es automatisch per `apt install` installiert
-- Danach wird das `system-info`-Kommando unter `/usr/local/bin` erstellt
-- Zum Schluss wird ein Testlauf ausgeführt und die Hardwareinformationen werden angezeigt
-
----
-
-## 📥 Manuelle Nutzung des Installers
-
-### 1. Skript lokal speichern:
-```bash
-wget https://raw.githubusercontent.com/gkochAT/system-info/main/install-system-info.sh
-chmod +x install-system-info.sh
-```
-
-### 2. Installation starten:
-```bash
-./install-system-info.sh
-```
-
-### 3. Deinstallation:
-```bash
-./install-system-info.sh --uninstall
-```
+- `dmidecode` wird installiert (falls nicht vorhanden)
+- `zfsutils-linux` wird installiert (falls nicht vorhanden)
+- Das Tool wird unter `/usr/local/bin/system-info` gespeichert
 
 ---
 
