@@ -8,6 +8,8 @@ Ein praktisches Shell-Tool zur Anzeige grundlegender Hardwareinformationen – i
 
 ✅ Zeigt dir auf einen Blick:
 
+- 🩺 SMART-Status aller Disks (SATA & NVMe), inkl. Debug-Ausgabe bei unbekanntem Zustand
+
 - 🧠 CPU-Modell, Cores und Threads
 - 🧬 Gesamter RAM & alle Module mit Typ und Part-Nummer
 - 💾 SSD/NVMe-Modelle mit Größe
@@ -55,6 +57,25 @@ Löscht das Tool (`/usr/local/bin/system-info`) wieder sauber vom System.
 ---
 
 ## 🧪 Beispielausgabe
+
+### 🧠 SMART Debug:
+Falls keine SMART-Informationen erkannt werden, wird die vollständige `smartctl`-Ausgabe angezeigt, z. B.:
+```bash
+SMART Status:
+/dev/nvme0n1: ❓ Kein Status erkannt (Debug-Ausgabe folgt):
+      SMART support is: Available – device has SMART capability.
+      SMART support is: Enabled
+```
+
+
+### 📦 Beispiel mit SMART Status:
+```bash
+SMART Status:
+  - /dev/sda: PASSED
+  - /dev/nvme0n1: ⚠️ FAILED!
+```
+
+
 
 ```bash
 System Info:
