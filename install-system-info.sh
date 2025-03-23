@@ -2,35 +2,41 @@
 
 TARGET="/usr/local/bin/system-info"
 
-# Uninstall-Funktion im Installationsskript
+# If called with --uninstall, remove the tool and exit
 if [[ "$1" == "--uninstall" ]]; then
-    echo "🗑️ Entferne /usr/local/bin/system-info falls vorhanden ..."
-    rm -f /usr/local/bin/system-info
+    echo "🗑️ Entferne $TARGET falls vorhanden ..."
+    rm -f "$TARGET"
     echo "✅ system-info wurde entfernt."
     exit 0
 fi
 
-# Starte Installation des Tools
 echo "📦 Installing or updating system-info to $TARGET ..."
 echo ""
 
-# Prüfen, ob dmidecode installiert ist – benötigt für RAM/CPU/Hardwareinfos
+# Check dependencies
 DEP_PKGS=""
+
+# dmidecode for hardware info
 if ! command -v dmidecode >/dev/null 2>&1; then
     DEP_PKGS="$DEP_PKGS dmidecode"
 fi
-# Prüfen, ob mdadm für RAID-Erkennung installiert ist
+
+# mdadm for RAID detection
 if ! command -v mdadm >/dev/null 2>&1; then
     DEP_PKGS="$DEP_PKGS mdadm"
 fi
-# Prüfen, ob zpool (ZFS) verfügbar ist
+
+# zpool (ZFS) for ZFS RAID detection
 if ! command -v zpool >/dev/null 2>&1; then
     DEP_PKGS="$DEP_PKGS zfsutils-linux"
 fi
-# Prüfen, ob smartctl (für SMART Status) verfügbar ist
+
+# smartctl for SMART status
 if ! command -v smartctl >/dev/null 2>&1; then
     DEP_PKGS="$DEP_PKGS smartmontools"
 fi
+
+# Install missing packages if needed
 if [[ -n "$DEP_PKGS" ]]; then
     echo "🔧 Installiere fehlende Abhängigkeiten: $DEP_PKGS"
     apt update && apt install -y $DEP_PKGS
@@ -38,6 +44,7 @@ else
     echo "✅ Alle benötigten Pakete sind installiert."
 fi
 
+# Double-check dmidecode
 if ! command -v dmidecode >/dev/null 2>&1; then
     echo "🔍 'dmidecode' ist nicht installiert. Versuche Installation ..."
     apt update && apt install -y dmidecode
@@ -51,7 +58,7 @@ else
     echo "✅ 'dmidecode' ist bereits installiert."
 fi
 
-# Prüfen, ob ZFS-Werkzeuge vorhanden sind – zpool wird für ZFS-RAID-Status benötigt
+# Double-check ZFS
 if ! command -v zpool >/dev/null 2>&1; then
     echo "🔍 'zfsutils-linux' (ZFS) ist nicht installiert. Versuche Installation ..."
     apt update && apt install -y zfsutils-linux
@@ -64,28 +71,11 @@ else
     echo "✅ ZFS-Tools (zfsutils-linux) sind bereits installiert."
 fi
 
-# Erstelle das Tool '/usr/local/bin/system-info' mit allen Hardwareausgaben
+# Create the actual system-info tool
 cat > "$TARGET" << 'EOF'
 #!/bin/bash
 
-# Prüfen auf '--uninstall' – entfernt das Tool bei Bedarf
-
-# --version anzeigen
-
-# --help anzeigen
-if [[ "$1" == "--help" ]]; then
-    echo ""
-    echo "🖥️ system-info – Systemdiagnose-Tool"
-    echo ""
-    echo "Verwendung:"
-    echo "  system-info                – Zeigt Systeminformationen"
-    echo "  system-info --version      – Zeigt die aktuelle Version"
-    echo "  system-info --uninstall    – Entfernt das Tool"
-    echo "  system-info --help         – Zeigt diese Hilfe an"
-    echo "  system-info --no-color     – Deaktiviert Farbige Ausgabe"
-    echo ""
-    exit 0
-fi
+# Handle arguments
 if [[ "$1" == "--help" ]]; then
     echo ""
     echo "🖥️ system-info – Systemdiagnose-Tool"
@@ -100,7 +90,7 @@ if [[ "$1" == "--help" ]]; then
 fi
 
 if [[ "$1" == "--version" ]]; then
-    echo "system-info v1.1"
+    echo "system-info v1.2"
     exit 0
 fi
 
@@ -115,55 +105,45 @@ echo ""
 echo -e "\e[1m\e[34mSystem Info:\e[0m"
 echo "------------"
 
-# OS & Kernel-Version anzeigen
+# OS & Kernel
 OS=$(grep PRETTY_NAME /etc/os-release | cut -d '=' -f2- | tr -d '"')
 KERNEL=$(uname -r)
 echo "OS:      $OS"
 echo "Kernel:  $KERNEL"
 
-# Hostname des Systems
+# Hostname
 HOST=$(hostname)
 echo "Hostname: $HOST"
 
-# Systemlaufzeit (Uptime)
+# Uptime
 UPTIME=$(uptime -p)
 echo "Uptime:   $UPTIME"
 
-# Prüfen, ob das System eine VM ist oder Bare Metal
+# Check if VM
 if dmidecode -s system-product-name | grep -qiE "virtual|vmware|kvm|qemu"; then
     echo "System Type: Virtual Machine"
 else
     echo "System Type: Physical"
 fi
 
-# IPv4-Adressen aller Netzwerkinterfaces ausgeben
+# Network Interfaces
 IP_OUTPUT=$(ip -o -4 addr show | awk '{print "  - " $2 ": " $4}')
 echo -e "\e[1mNetwork Interfaces:\e[0m"
 echo "$IP_OUTPUT"
 
-# CPU-Name (Modell)
+# CPU Info
 CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d ':' -f2- | xargs)
 echo "CPU:      $CPU"
-
-# Anzahl CPU-Kerne und Threads
 CORES=$(nproc --all)
 THREADS=$(lscpu | awk '/^CPU\(s\):/ {print $2}')
 echo "Cores:    $CORES"
 echo "Threads:  $THREADS"
 
-# RAM-Summe (alle Module), unabhängig ob MB oder GB
-TOTAL_RAM=$(dmidecode -t memory | awk '
-/Size: [0-9]+ [MG]B/ {
-    if ($2 == "No") next
-    if ($3 == "MB") sum += $2
-    if ($3 == "GB") sum += $2 * 1024
-}
-END {
-    printf "%.1f GB", sum / 1024
-}')
+# Total RAM (simpler approach via /proc/meminfo)
+TOTAL_RAM=$(awk '/MemTotal/ {printf "%.1f GB", $2/1024/1024}' /proc/meminfo)
 echo "Total RAM: $TOTAL_RAM"
 
-# Details aller RAM-Bausteine (Größe, Typ, Part-Nummer)
+# RAM Module details (dmidecode)
 echo -e "\e[1m\e[33mRAM Module:\e[0m"
 dmidecode -t memory | awk '
 /Memory Device/,/^$/ {
@@ -180,71 +160,11 @@ dmidecode -t memory | awk '
     }
 }'
 
-# Liste aller physischen Datenträger (SSD/NVMe) mit Modell und Größe
-
-# SMART Status für erkannte Disks anzeigen
+# SMART Status
 echo -e "\e[1m\e[36mSMART Status:\e[0m"
 lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
     DEVICE="/dev/$disk"
     if [[ "$disk" == nvme* ]]; then
-        OUT=$(smartctl -H -d nvme "$DEVICE" 2>/dev/null)
-    else
-        OUT=$(smartctl -H "$DEVICE" 2>/dev/null)
-    fi
-
-    STATUS=$(echo "$OUT" | grep -i "SMART overall-health self-assessment" | awk -F: '{print $2}' | xargs)
-    if [[ -z "$STATUS" ]]; then
-        STATUS=$(echo "$OUT" | grep -i "SMART Health Status" | awk -F: '{print $2}' | xargs)
-    fi
-    if [[ -z "$STATUS" ]]; then
-        echo "  - $DEVICE: ❓ Kein Status erkannt (Debug-Ausgabe folgt):"
-        echo "$OUT" | sed 's/^/      /'
-        continue
-    fi
-
-    if echo "$STATUS" | grep -qi "fail"; then
-        echo "  - $DEVICE: ⚠️ $STATUS"
-    else
-        echo "  - $DEVICE: $STATUS"
-    fi
-done
-
-
-
-
-
-echo -e "\e[1m\e[36mSMART Status:\e[0m"
-lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
-    DEVICE="/dev/$disk"
-    if [[ "$disk" == nvme* ]]; then
-        # NVMe verwenden eigenen Modus
-        OUT=$(smartctl -H -d nvme "$DEVICE" 2>/dev/null)
-    else
-        OUT=$(smartctl -H "$DEVICE" 2>/dev/null)
-    fi
-
-    STATUS=$(echo "$OUT" | grep -i "SMART overall-health self-assessment" | awk -F: '{print $2}' | xargs)
-    if [[ -z "$STATUS" ]]; then
-        STATUS=$(echo "$OUT" | grep -i "SMART Health Status" | awk -F: '{print $2}' | xargs)
-    fi
-    if [[ -z "$STATUS" ]]; then
-        echo "  - $DEVICE: ❓ Kein Status erkannt (Debug-Ausgabe folgt):"
-        echo "$OUT" | sed 's/^/      /'
-        continue
-    fi
-
-    if echo "$STATUS" | grep -qi "fail"; then
-        echo "  - $DEVICE: ⚠️ $STATUS"
-    else
-        echo "  - $DEVICE: $STATUS"
-    fi
-done
-
-echo -e "\e[1m\e[36mSMART Status:\e[0m"
-lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
-    DEVICE="/dev/$disk"
-    if [[ "$disk" == nvme* ]]; then
-        # NVMe verwenden eigenen Modus
         OUT=$(smartctl -H -d nvme "$DEVICE" 2>/dev/null)
     else
         OUT=$(smartctl -H "$DEVICE" 2>/dev/null)
@@ -265,14 +185,13 @@ lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; 
     fi
 done
 
+# Disk(s)
 echo -e "\e[1m\e[33mDisk(s):\e[0m"
 lsblk -d -o NAME,MODEL,SIZE | grep -iE 'sd|nvme' | while read -r NAME MODEL SIZE; do
     printf "  - /dev/%s: %s - %s\n" "$NAME" "$MODEL" "$SIZE"
 done
 
-# RAID-Status prüfen: mdadm und ZFS
-
-# mdadm RAID prüfen
+# RAID-Status (mdadm)
 if grep -q "^md" /proc/mdstat; then
     grep "^md" /proc/mdstat | while read -r line; do
         echo "  - Software-RAID (mdadm): $line"
@@ -284,7 +203,7 @@ else
     echo "  - Kein Software-RAID (mdadm) erkannt"
 fi
 
-# ZFS RAID prüfen
+# ZFS RAID
 if command -v zpool >/dev/null 2>&1; then
     ZPOOLS=$(zpool list -H -o name)
     if [[ -n "$ZPOOLS" ]]; then
@@ -303,8 +222,6 @@ else
 fi
 
 echo -e "\e[1m\e[35mRAID Status:\e[0m"
-
-# mdadm RAID
 if grep -q "^md" /proc/mdstat; then
     grep "^md" /proc/mdstat | while read -r line; do
         echo "  - Software-RAID (mdadm): $line"
@@ -313,7 +230,6 @@ else
     echo "  - Kein Software-RAID (mdadm) erkannt"
 fi
 
-# ZFS RAID
 if command -v zpool >/dev/null 2>&1; then
     ZPOOLS=$(zpool list -H -o name)
     if [[ -n "$ZPOOLS" ]]; then
@@ -338,6 +254,3 @@ echo ""
 echo "🔍 Testlauf:"
 echo "---------------------------"
 "$TARGET"
-
-# Selbstlöschung nach erfolgreicher Installation
-# Selbstlöschung entfernt – nicht notwendig bei Ausführung aus /tmp
