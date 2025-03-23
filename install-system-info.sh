@@ -3,6 +3,10 @@
 # Dieses Skript überprüft die Abhängigkeiten, installiert das system-info Skript
 # nach /usr/local/bin/system-info und fragt am Ende, ob es direkt ausgeführt werden soll.
 
+# Versionsinfo und Hinweis
+echo "system-info-install v1.0"
+echo "Hinweis: Dieses Installationsskript ist für Debian-basierte Systeme optimiert."
+
 TARGET="/usr/local/bin/system-info"
 
 # Funktion zur Überprüfung der Abhängigkeiten inkl. Installation fehlender Pakete
@@ -80,6 +84,9 @@ cat << 'EOF' > "$TARGET"
 # Hinweis: Dieses Skript überprüft NICHT die Abhängigkeiten.
 # Alle Parameter gelten für system-info.
 
+# Versionsvariable
+version="v1.5"
+
 TARGET="/usr/local/bin/system-info"
 
 # Farben definieren
@@ -101,7 +108,7 @@ while [[ "$1" == --* ]]; do
             shift
             ;;
         --version)
-            echo "system-info v1.5"
+            echo "system-info $version"
             exit 0
             ;;
         --uninstall)
@@ -127,7 +134,8 @@ while [[ "$1" == --* ]]; do
     esac
 done
 
-echo -e "${BOLD}${CYAN}System Info:${RESET}"
+# Header mit Versionsangabe ausgeben
+echo -e "${BOLD}${CYAN}System Info ${version}:${RESET}"
 echo "------------"
 
 echo "OS:      $(grep PRETTY_NAME /etc/os-release | cut -d '=' -f2- | tr -d '\"')"
