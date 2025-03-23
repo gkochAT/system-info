@@ -343,3 +343,4 @@ lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; 
         echo "  - $DEVICE: $STATUS"
     fi
 done
+
