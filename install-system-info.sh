@@ -182,32 +182,6 @@ dmidecode -t memory | awk '
 
 # Liste aller physischen Datenträger (SSD/NVMe) mit Modell und Größe
 
-# SMART Status für erkannte Disks anzeigen
-echo -e "\e[1m\e[36mSMART Status:\e[0m"
-lsblk -d -o NAME,TYPE | grep -E 'disk' | awk '{print $1}' | while read -r disk; do
-    DEVICE="/dev/$disk"
-    if [[ "$disk" == nvme* ]]; then
-        OUT=$(smartctl -H -d nvme "$DEVICE" 2>/dev/null)
-    else
-        OUT=$(smartctl -H "$DEVICE" 2>/dev/null)
-    fi
-
-    STATUS=$(echo "$OUT" | grep -i "SMART overall-health self-assessment" | awk -F: '{print $2}' | xargs)
-    if [[ -z "$STATUS" ]]; then
-        STATUS=$(echo "$OUT" | grep -i "SMART Health Status" | awk -F: '{print $2}' | xargs)
-    fi
-    if [[ -z "$STATUS" ]]; then
-        echo "  - $DEVICE: ❓ Kein Status erkannt (Debug-Ausgabe folgt):"
-        echo "$OUT" | sed 's/^/      /'
-        continue
-    fi
-
-    if echo "$STATUS" | grep -qi "fail"; then
-        echo "  - $DEVICE: ⚠️ $STATUS"
-    else
-        echo "  - $DEVICE: $STATUS"
-    fi
-done
 
 
 
